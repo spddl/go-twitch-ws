@@ -2,19 +2,10 @@ package twitch
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
 
 func (client *Client) Login() {
-	log.Println("Login()")
-
-	// client.write([]byte("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership"))
-	// if !strings.HasPrefix(client.User, "justinfan") {
-	// 	client.write([]byte(fmt.Sprintf("PASS oauth:%s", client.Oauth)))
-	// }
-	// client.write([]byte(fmt.Sprintf("NICK %s", client.User)))
-
 	client.emitQueue.Authenticate <- "CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership"
 	if !strings.HasPrefix(client.User, "justinfan") {
 		client.emitQueue.Authenticate <- fmt.Sprintf("PASS oauth:%s", client.Oauth)

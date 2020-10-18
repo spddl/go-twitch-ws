@@ -177,21 +177,21 @@ func (client *Client) parser(msgData []byte) {
 
 func (client *Client) sendJoin(rawMsgChan <-chan string) {
 	for rawMsg := range rawMsgChan {
-		_joinRateQueueLimit += 1
+		_joinRateQueueLimit.Add()
 		go func() {
 			time.Sleep(time.Duration(joinRateLimitSeconds) * time.Second)
-			_joinRateQueueLimit -= 1
+			_joinRateQueueLimit.Sub()
 		}()
 
 		if client.BotVerified {
-			if _joinRateQueueLimit >= verifiedJoinRateLimitMessages {
+			if _joinRateQueueLimit.Get() >= verifiedJoinRateLimitMessages {
 				log.Println(fmt.Sprintf("_joinRateQueueLimit(%d) limit reached", verifiedJoinRateLimitMessages))
-				time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
+				time.Sleep(time.Duration(joinRateLimitSeconds) * time.Second)
 			}
 		} else {
-			if _joinRateQueueLimit >= joinRateLimitMessages {
+			if _joinRateQueueLimit.Get() >= joinRateLimitMessages {
 				log.Println(fmt.Sprintf("_joinRateQueueLimit(%d) limit reached", joinRateLimitMessages))
-				time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
+				time.Sleep(time.Duration(joinRateLimitSeconds) * time.Second)
 			}
 		}
 
@@ -201,19 +201,20 @@ func (client *Client) sendJoin(rawMsgChan <-chan string) {
 
 func (client *Client) sendAuthenticate(rawMsgChan <-chan string) {
 	for rawMsg := range rawMsgChan {
-		_authenticateRateQueueLimit += 1
+		_authenticateRateQueueLimit.Add()
+
 		go func() {
 			time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
-			_authenticateRateQueueLimit -= 1
+			_authenticateRateQueueLimit.Sub()
 		}()
 
 		if client.BotVerified {
-			if _authenticateRateQueueLimit >= verifiedauthenticateRateLimitMessages {
+			if _authenticateRateQueueLimit.Get() >= verifiedauthenticateRateLimitMessages {
 				log.Println(fmt.Sprintf("_authenticateRateQueueLimit(%d) limit reached", verifiedauthenticateRateLimitMessages))
 				time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
 			}
 		} else {
-			if _authenticateRateQueueLimit >= authenticateRateLimitMessages {
+			if _authenticateRateQueueLimit.Get() >= authenticateRateLimitMessages {
 				log.Println(fmt.Sprintf("_authenticateRateQueueLimit(%d) limit reached", authenticateRateLimitMessages))
 				time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
 			}
@@ -225,13 +226,13 @@ func (client *Client) sendAuthenticate(rawMsgChan <-chan string) {
 
 func (client *Client) send(rawMsgChan <-chan string) {
 	for rawMsg := range rawMsgChan {
-		_queueRateLimit += 1
+		_queueRateLimit.Add()
 		go func() {
 			time.Sleep(time.Duration(rateLimitSeconds) * time.Second)
-			_queueRateLimit -= 1
+			_queueRateLimit.Sub()
 		}()
 
-		if _queueRateLimit >= rateLimitMessages {
+		if _queueRateLimit.Get() >= rateLimitMessages {
 			log.Println(fmt.Sprintf("_queueRateLimit(%d) limit reached", rateLimitMessages))
 			time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
 		}
@@ -242,13 +243,13 @@ func (client *Client) send(rawMsgChan <-chan string) {
 
 func (client *Client) sendModOp(rawMsgChan <-chan string) {
 	for rawMsg := range rawMsgChan {
-		_queueRateLimitModOp += 1
+		_queueRateLimitModOp.Add()
 		go func() {
 			time.Sleep(time.Duration(rateLimitModOpSeconds) * time.Second)
-			_queueRateLimitModOp -= 1
+			_queueRateLimitModOp.Sub()
 		}()
 
-		if _queueRateLimitModOp >= rateLimitModOpMessages {
+		if _queueRateLimitModOp.Get() >= rateLimitModOpMessages {
 			log.Println(fmt.Sprintf("_queueRateLimitModOp(%d) limit reached", rateLimitModOpMessages))
 			time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
 		}
@@ -283,6 +284,5 @@ func (client *Client) pingPong() { // https://github.com/gempir/go-twitch-irc/bl
 				// closer.Close()
 			}
 		}
-
 	}()
 }

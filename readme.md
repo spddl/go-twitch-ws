@@ -1,4 +1,3 @@
-
 # go-twitch-ws
 
 I wanted to build a Twitch Bouncer in GO but I was missing the Websocket interface
@@ -21,7 +20,8 @@ https://github.com/tmijs/tmi.js
 
 https://github.com/twitch-js/twitch-js
 
-example:
+
+## Getting Started
 ```go
 interrupt := make(chan os.Signal, 1)
 signal.Notify(interrupt, os.Interrupt)
