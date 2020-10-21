@@ -15,6 +15,7 @@ type EmitQueue struct {
 	Join         chan string
 	RateLimit    chan string
 	ModOp        chan string
+	Whisper      chan string
 }
 
 type Client struct {
@@ -34,6 +35,7 @@ type Client struct {
 	emitQueue    EmitQueue
 	pongReceived chan bool
 
+	OnConnect               func(message bool)
 	OnPrivateMessage        func(message IRCMessage)
 	OnRoomStateMessage      func(message IRCMessage)
 	OnHosttargetMessage     func(message IRCMessage)
@@ -51,56 +53,56 @@ type Client struct {
 	OnPongLatency           func(message time.Duration)
 }
 
-func NewClient(client Client) (*Client, error) {
+func NewClient(c Client) (*Client, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	client.ctx = &ctx
-	client.cancel = cancel
+	c.ctx = &ctx
+	c.cancel = cancel
 
-	c, _, err := websocket.Dial(ctx, "wss://irc-ws.chat.twitch.tv", nil)
+	conn, _, err := websocket.Dial(ctx, c.Server, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	client.conn = c
+	c.conn = conn
 
-	if client.Debug {
-		log.Printf("< connecting to %s\n", client.Server)
+	if c.Debug {
+		log.Printf("< connecting to %s\n", c.Server)
 	}
 
-	if client.User == "" {
-		client.User = fmt.Sprintf("justinfan%d", rand.Intn(9999-1000)+1000)
+	if c.User == "" {
+		c.User = fmt.Sprintf("justinfan%d", rand.Intn(9999-1000)+1000)
 	}
 
-	client.emitQueue.Authenticate = make(chan string)
-	client.emitQueue.Join = make(chan string)
-	client.emitQueue.RateLimit = make(chan string)
-	client.emitQueue.ModOp = make(chan string)
+	c.emitQueue.Authenticate = make(chan string)
+	c.emitQueue.Join = make(chan string)
+	c.emitQueue.RateLimit = make(chan string)
+	c.emitQueue.ModOp = make(chan string)
 
-	go client.sendAuthenticate(client.emitQueue.Authenticate)
-	go client.sendJoin(client.emitQueue.Join)
-	go client.send(client.emitQueue.RateLimit)
-	go client.sendModOp(client.emitQueue.ModOp)
+	go c.sendAuthenticate(c.emitQueue.Authenticate)
+	go c.sendJoin(c.emitQueue.Join)
+	go c.send(c.emitQueue.RateLimit)
+	go c.sendModOp(c.emitQueue.ModOp)
+	go c.sendWhisper(c.emitQueue.Whisper)
 
-	go client.pingPong() // takes care of the ping pong
+	go c.pingPong() // takes care of the ping pong
 
-	go client.read()
+	go c.read()
 
-	return &client, nil
+	return &c, nil
 }
 
-func (client *Client) Close() {
-	if client.Debug {
+func (c *Client) Close() {
+	if c.Debug {
 		log.Println("Close Connection")
 	}
 
-	close(client.emitQueue.Authenticate)
-	close(client.emitQueue.Join)
-	close(client.emitQueue.RateLimit)
-	close(client.emitQueue.ModOp)
+	close(c.emitQueue.Authenticate)
+	close(c.emitQueue.Join)
+	close(c.emitQueue.RateLimit)
+	close(c.emitQueue.ModOp)
 
-	err := client.conn.Close(websocket.StatusNormalClosure, "")
-	if err != nil {
-		panic(err)
-	}
-
-	client.cancel()
+	c.cancel()
+	// err := c.conn.Close(websocket.StatusNormalClosure, "")
+	// if err != nil {
+	// 	panic(err)
+	// }
 }

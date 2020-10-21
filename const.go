@@ -27,13 +27,15 @@ var ( // https://dev.twitch.tv/docs/irc/guide#command--message-limits
 	_queueRateLimitModOp   MutexInt = MutexInt{v: 0} // don't modify
 
 	// For Whispers, which are private chat message between two users:
-	// Limit	Applies to
+	// Limit Applies to
 	// 3 per second, up to 100 per minute
-	// 40 accounts per day	Users (not bots)
+	// 40 accounts per day Users (not bots)
+
 	// 10 per second, up to 200 per minute
-	// 500 accounts per day	Known bots
+	// 500 accounts per day Known bots
+
 	// 20 per second, up to 1200 per minute
-	// 100,000 accounts per day	Verified bots
+	// 100,000 accounts per day Verified bots
 )
 
 type MutexInt struct { // mutual-exclusion lock

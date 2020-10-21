@@ -5,39 +5,40 @@ import (
 	"strings"
 )
 
-func (client *Client) Login() {
-	client.emitQueue.Authenticate <- "CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership"
-	if !strings.HasPrefix(client.User, "justinfan") {
-		client.emitQueue.Authenticate <- fmt.Sprintf("PASS oauth:%s", client.Oauth)
+func (c *Client) Login() {
+	c.emitQueue.Authenticate <- "CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership"
+	if !strings.HasPrefix(c.User, "justinfan") {
+		c.emitQueue.Authenticate <- fmt.Sprintf("PASS oauth:%s", c.Oauth)
 	}
-	client.emitQueue.Authenticate <- fmt.Sprintf("NICK %s", client.User)
+	c.emitQueue.Authenticate <- fmt.Sprintf("NICK %s", c.User)
 }
 
 // Join accept channels only in lowercase
-func (client *Client) Join(channels []string) {
+func (c *Client) Join(channels []string) {
 	for _, channel := range channels {
-		client.emitQueue.Join <- fmt.Sprintf(":%s! JOIN #%s", client.User, channel)
+		c.emitQueue.Join <- fmt.Sprintf(":%s! JOIN #%s", c.User, channel)
 	}
 	// https://github.com/gempir/go-twitch-irc/issues/102#issuecomment-510882229
 }
 
 // Part accept channels only in lowercase
-func (client *Client) Part(channels []string) {
+func (c *Client) Part(channels []string) {
 	for _, channel := range channels {
-		client.emitQueue.Join <- fmt.Sprintf(":%s! PART #%s", client.User, channel)
+		c.emitQueue.Join <- fmt.Sprintf(":%s! PART #%s", c.User, channel)
 	}
 }
 
 // Say channel without #
-func (client *Client) Say(channel, msg string, modPrivileged bool) {
+func (c *Client) Say(channel, msg string, modPrivileged bool) {
 	if modPrivileged {
-		client.emitQueue.ModOp <- fmt.Sprintf(":tmi.twitch.tv PRIVMSG #%s :%s", channel, msg)
+		c.emitQueue.ModOp <- fmt.Sprintf(":tmi.twitch.tv PRIVMSG #%s :%s", channel, msg)
 	} else {
-		client.emitQueue.RateLimit <- fmt.Sprintf(":tmi.twitch.tv PRIVMSG #%s :%s", channel, msg)
+		c.emitQueue.RateLimit <- fmt.Sprintf(":tmi.twitch.tv PRIVMSG #%s :%s", channel, msg)
 	}
 
 }
 
-func (client *Client) Whisper(nick, msg string) {
-	client.emitQueue.RateLimit <- fmt.Sprintf(":tmi.twitch.tv PRIVMSG #jtv :/w %s %s", nick, msg)
+// Whisper TODO: currently without rate limit
+func (c *Client) Whisper(nick, msg string) {
+	c.emitQueue.Whisper <- fmt.Sprintf(":tmi.twitch.tv PRIVMSG #jtv :/w %s %s", nick, msg) // TODO Rate Limit
 }
