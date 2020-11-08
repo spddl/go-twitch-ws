@@ -16,12 +16,13 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	bot, err := twitch.NewClient(twitch.Client{
+	bot, err := twitch.NewClient(&twitch.Client{
 		Server:      "wss://irc-ws.chat.twitch.tv", // SSL, without SSL: ws://irc-ws.chat.twitch.tv
 		User:        "",
 		Oauth:       "", // without "oauth:" https://twitchapps.com/tmi/
 		Debug:       true,
 		BotVerified: false, // verified bots: Have higher chat limits than regular users.
+		Channel:     []string{"gronkhtv", "tfue", "dreamHackcs"},
 	})
 	if err != nil {
 		panic(err)
@@ -40,8 +41,7 @@ func main() {
 		log.Println(fmt.Sprintf("%s - %s: %s", msg.Params[0][1:], msg.Tags["display-name"], msg.Params[1]))
 	}
 
-	bot.Login()
-	bot.Join([]string{"gronkhtv", "tfue", "dreamHackcs"}) // only in Lowercase
+	bot.Run()
 
 	for { // ctrl - c
 		<-interrupt

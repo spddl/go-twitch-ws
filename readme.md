@@ -1,25 +1,22 @@
 # go-twitch-ws
 
-I wanted to build a Twitch Bouncer in GO but I was missing the Websocket interface
-
+I wanted to build a Twitch Bouncer in Go but I was missing the Websocket interface
 I only found this: https://github.com/gempir/go-twitch-irc
-
 I also build my own light variant for the twitch-websockets interface
 
-### Help/Ideas/Improvements from:
+### Help/Ideas/Improvements from
 
-https://dev.twitch.tv/docs/irc/guide#connecting-to-twitch-irc
+[Twitch Docs](https://dev.twitch.tv/docs/irc/guide#connecting-to-twitch-irc)
+[Getting started with websocket client in go](https://medium.com/@sachinshinde7676/getting-started-with-websocket-client-in-go-73baaf8b5caf)
+[go-twitch-irc](https://github.com/gempir/go-twitch-irc)
+[recws](https://github.com/recws-org/recws)
+[irc-message parser](https://github.com/sigkell/irc-message)
+[tmi.js](https://github.com/tmijs/tmi.js)
+[twitch-js](https://github.com/twitch-js/twitch-js)
 
-https://medium.com/@sachinshinde7676/getting-started-with-websocket-client-in-go-73baaf8b5caf
+## Documentation
 
-https://github.com/gempir/go-twitch-irc
-
-https://github.com/sigkell/irc-message
-
-https://github.com/tmijs/tmi.js
-
-https://github.com/twitch-js/twitch-js
-
+https://pkg.go.dev/github.com/spddl/go-twitch-ws
 
 ## Getting Started
 ```go
@@ -32,6 +29,7 @@ bot, err := twitch.NewClient(twitch.Client{
   Oauth:       "", // without "oauth:" https://twitchapps.com/tmi/
   Debug:       true,
   BotVerified: false, // verified bots: Have higher chat limits than regular users.
+  Channel: []string{"gronkhtv", "tfue", "dreamHackcs"}, // only in Lowercase
 })
 if err != nil {
   panic(err)
@@ -49,8 +47,7 @@ bot.OnPrivateMessage = func(msg twitch.IRCMessage) {
   log.Println(fmt.Sprintf("%s - %s: %s", msg.Params[0][1:], msg.Tags["display-name"], msg.Params[1]))
 }
 
-bot.Login()
-bot.Join([]string{"gronkhtv", "tfue", "dreamHackcs"}) // only in Lowercase
+bot.Run()
 
 for { // ctrl - c
   <-interrupt

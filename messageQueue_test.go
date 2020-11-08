@@ -42,8 +42,9 @@ func BenchmarkReadFrom(b *testing.B) {
 		}
 
 		msg := bytes.Split(bp.Bytes(), []byte{13, 10}) // "\r\n"
-		for _, _ = range msg {
+		for _, value := range msg {
 			// client.parser(value)
+			_ = value
 		}
 
 		bpoolPut(bp)
@@ -110,8 +111,9 @@ func BenchmarkReadIOUtil(b *testing.B) { // https://golang.org/src/io/ioutil/iou
 		}
 
 		msg := bytes.Split(buf.Bytes(), []byte{13, 10}) // "\r\n"
-		for _, _ = range msg {
+		for _, value := range msg {
 			// client.parser(value)
+			_ = value
 		}
 	}
 }

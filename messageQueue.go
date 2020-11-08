@@ -8,49 +8,63 @@ import (
 
 func (c *Client) read() {
 	for {
-		_, r, err := c.conn.Reader(*c.ctx)
-		if err != nil {
-			log.Println(err)
-			// messageQueue.go:12: failed to get reader: WebSocket closed: sent close frame: status = StatusNormalClosure and reason = ""
-			// messageQueue.go:12: failed to get reader: failed to acquire lock: context canceled
+		select {
+		case <-c.context.Done():
+			c.Close()
 			return
-		}
+		default:
+			if c.IsConnected() {
+				_, r, err := c.conn.Reader(c.context)
+				if err != nil {
+					c.CloseAndReconnect()
+					continue
+				}
 
-		var buf bytes.Buffer
-		buf.Grow(bytes.MinRead)
+				var buf bytes.Buffer
+				buf.Grow(bytes.MinRead)
 
-		_, err = buf.ReadFrom(r)
-		if err != nil {
-			log.Println(err)
-		}
+				_, err = buf.ReadFrom(r)
+				if err != nil {
+					continue // failed to read: WebSocket closed: sent close frame: status = StatusNormalClosure and reason = ""
+				}
 
-		msg := bytes.Split(buf.Bytes(), []byte{13, 10}) // "\r\n"
-		for _, value := range msg {
-			go c.parser(value)
+				msg := bytes.Split(buf.Bytes(), []byte{13, 10}) // "\r\n"
+				for _, value := range msg {
+					go c.parser(value)
+				}
+			}
 		}
 	}
 }
 
 func (c *Client) write(msg []byte) {
-	w, err := c.conn.Writer(*c.ctx, 1) // websocket.MessageText
-	if err != nil {
-		log.Println(err)
+	select {
+	case <-c.context.Done():
+		c.Close()
 		return
-	}
+	default:
+		if c.IsConnected() {
+			w, err := c.conn.Writer(c.context, 1 /* websocket.MessageText */)
+			if err != nil {
+				c.CloseAndReconnect()
+				return
+			}
 
-	_, err = w.Write(append(msg, []byte{13, 10}...))
-	if err != nil {
-		log.Println(err)
-		return
-	}
+			_, err = w.Write(append(msg, []byte{13, 10}...))
+			if err != nil {
+				log.Println(err)
+				return
+			}
 
-	err = w.Close()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	if c.Debug {
-		log.Printf("< %s", msg)
+			err = w.Close()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			if c.Debug {
+				log.Printf(debugTemplate, msg)
+			}
+		}
 	}
 }
 
@@ -72,24 +86,23 @@ func (c *Client) parser(msgData []byte) {
 				c.OnPrivateMessage(*ircMsg)
 			}
 		} else if bytes.Equal(ircMsg.Command, []byte{48, 48, 49}) { // RPL_WELCOME (001) Welcome, GLHF!
+			if c.Debug {
+				log.Printf(debugTemplate, v)
+			}
 			if c.OnConnect != nil {
 				c.OnConnect(true)
 			}
-			if c.Debug {
-				log.Printf("> %s", v)
-			}
-
 		} else if bytes.Equal(ircMsg.Command, []byte{48, 48, 50}) { // RPL_YOURHOST (002) Your host is tmi.twitch.tv
 			if c.Debug {
-				log.Printf("> %s", v)
+				log.Printf(debugTemplate, v)
 			}
 		} else if bytes.Equal(ircMsg.Command, []byte{48, 48, 51}) { // RPL_CREATED (003) This server is rather new
 			if c.Debug {
-				log.Printf("> %s", v)
+				log.Printf(debugTemplate, v)
 			}
 		} else if bytes.Equal(ircMsg.Command, []byte{48, 48, 52}) { // RPL_MYINFO (004)
 			if c.Debug {
-				log.Printf("> %s", v)
+				log.Printf(debugTemplate, v)
 			}
 		} else if bytes.Equal(ircMsg.Command, []byte{51, 53, 51}) { // RPL_NAMREPLY (353)
 			if c.OnNamesMessage != nil {
@@ -101,19 +114,19 @@ func (c *Client) parser(msgData []byte) {
 			}
 		} else if bytes.Equal(ircMsg.Command, []byte{51, 55, 50}) { // RPL_MOTD (372) You are in a maze of twisty passages, all alike.
 			if c.Debug {
-				log.Printf("> %s", v)
+				log.Printf(debugTemplate, v)
 			}
 		} else if bytes.Equal(ircMsg.Command, []byte{51, 55, 53}) { // RPL_MOTDSTART (375)
 			if c.Debug {
-				log.Printf("> %s", v)
+				log.Printf(debugTemplate, v)
 			}
 		} else if bytes.Equal(ircMsg.Command, []byte{51, 55, 54}) { // RPL_ENDOFMOTD (376)
 			if c.Debug {
-				log.Printf("> %s", v)
+				log.Printf(debugTemplate, v)
 			}
 		} else if bytes.Equal(ircMsg.Command, []byte{67, 65, 80}) { // CAP
 			if c.Debug {
-				log.Printf("> %s", v)
+				log.Printf(debugTemplate, v)
 			}
 		} else if bytes.Equal(ircMsg.Command, []byte{72, 79, 83, 84, 84, 65, 82, 71, 69, 84}) { // HOSTTARGET
 			if c.OnHosttargetMessage != nil {
@@ -156,11 +169,11 @@ func (c *Client) parser(msgData []byte) {
 			}
 
 		} else if bytes.Equal(ircMsg.Command, []byte{80, 73, 78, 71}) { // PING // https://blog.golang.org/concurrency-timeouts
-			c.write([]byte{80, 79, 78, 71, 32, 58, 116, 109, 105, 46, 116, 119, 105, 116, 99, 104, 46, 116, 118, 13, 10}) // "PONG :tmi.twitch.tv\r\n"
-
+			if c.IsConnected() {
+				c.write([]byte{80, 79, 78, 71, 32, 58, 116, 109, 105, 46, 116, 119, 105, 116, 99, 104, 46, 116, 118, 13, 10}) // "PONG :tmi.twitch.tv\r\n"
+			}
 		} else if bytes.Equal(ircMsg.Command, []byte{80, 79, 78, 71}) { // PONG
 			c.pongReceived <- true
-
 		} else if bytes.Equal(ircMsg.Command, []byte{74, 79, 73, 78}) { // JOIN
 			if c.OnJoinMessage != nil {
 				c.OnJoinMessage(*ircMsg)
@@ -182,20 +195,20 @@ func (c *Client) parser(msgData []byte) {
 
 func (c *Client) sendJoin(rawMsgChan <-chan string) {
 	for rawMsg := range rawMsgChan {
-		_joinRateQueueLimit.Add()
+		_joinRateQueueLimit.add()
 		go func() {
 			time.Sleep(time.Duration(joinRateLimitSeconds) * time.Second)
-			_joinRateQueueLimit.Sub()
+			_joinRateQueueLimit.sub()
 		}()
 
 		if c.BotVerified {
-			if _joinRateQueueLimit.Get() >= verifiedJoinRateLimitMessages {
-				log.Printf("_joinRateQueueLimit(%d) limit reached", verifiedJoinRateLimitMessages)
+			if _joinRateQueueLimit.get() >= verifiedJoinRateLimitMessages {
+				log.Printf(joinRateQueueLimitTemplate, verifiedJoinRateLimitMessages)
 				time.Sleep(time.Duration(joinRateLimitSeconds) * time.Second)
 			}
 		} else {
-			if _joinRateQueueLimit.Get() >= joinRateLimitMessages {
-				log.Printf("_joinRateQueueLimit(%d) limit reached", joinRateLimitMessages)
+			if _joinRateQueueLimit.get() >= joinRateLimitMessages {
+				log.Printf(joinRateQueueLimitTemplate, joinRateLimitMessages)
 				time.Sleep(time.Duration(joinRateLimitSeconds) * time.Second)
 			}
 		}
@@ -206,21 +219,21 @@ func (c *Client) sendJoin(rawMsgChan <-chan string) {
 
 func (c *Client) sendAuthenticate(rawMsgChan <-chan string) {
 	for rawMsg := range rawMsgChan {
-		_authenticateRateQueueLimit.Add()
+		_authenticateRateQueueLimit.add()
 
 		go func() {
 			time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
-			_authenticateRateQueueLimit.Sub()
+			_authenticateRateQueueLimit.sub()
 		}()
 
 		if c.BotVerified {
-			if _authenticateRateQueueLimit.Get() >= verifiedauthenticateRateLimitMessages {
-				log.Printf("_authenticateRateQueueLimit(%d) limit reached", verifiedauthenticateRateLimitMessages)
+			if _authenticateRateQueueLimit.get() >= verifiedauthenticateRateLimitMessages {
+				log.Printf(authenticateRateQueueLimitTemplate, verifiedauthenticateRateLimitMessages)
 				time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
 			}
 		} else {
-			if _authenticateRateQueueLimit.Get() >= authenticateRateLimitMessages {
-				log.Printf("_authenticateRateQueueLimit(%d) limit reached", authenticateRateLimitMessages)
+			if _authenticateRateQueueLimit.get() >= authenticateRateLimitMessages {
+				log.Printf(authenticateRateQueueLimitTemplate, authenticateRateLimitMessages)
 				time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
 			}
 		}
@@ -230,19 +243,18 @@ func (c *Client) sendAuthenticate(rawMsgChan <-chan string) {
 }
 
 func (c *Client) send(rawMsgChan <-chan string) {
-	// log.Println("send")
 	for rawMsg := range rawMsgChan {
-		_queueRateLimit.Add()
+		_queueRateLimit.add()
 		go func() {
 			time.Sleep(time.Duration(rateLimitSeconds) * time.Second)
-			_queueRateLimit.Sub()
+			_queueRateLimit.sub()
 		}()
 
-		if _queueRateLimit.Get() >= rateLimitMessages {
-			log.Printf("_queueRateLimit(%d) limit reached", rateLimitMessages)
+		if _queueRateLimit.get() >= rateLimitMessages {
+			log.Printf(queueRateLimitTemplate, rateLimitMessages)
 			time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
 		}
-		log.Println("send", _queueRateLimit.Get())
+		log.Println("send", _queueRateLimit.get())
 		log.Println("rawMsg", rawMsg)
 		c.write([]byte(rawMsg))
 	}
@@ -250,14 +262,14 @@ func (c *Client) send(rawMsgChan <-chan string) {
 
 func (c *Client) sendModOp(rawMsgChan <-chan string) {
 	for rawMsg := range rawMsgChan {
-		_queueRateLimitModOp.Add()
+		_queueRateLimitModOp.add()
 		go func() {
 			time.Sleep(time.Duration(rateLimitModOpSeconds) * time.Second)
-			_queueRateLimitModOp.Sub()
+			_queueRateLimitModOp.sub()
 		}()
 
-		if _queueRateLimitModOp.Get() >= rateLimitModOpMessages {
-			log.Printf("_queueRateLimitModOp(%d) limit reached", rateLimitModOpMessages)
+		if _queueRateLimitModOp.get() >= rateLimitModOpMessages {
+			log.Printf(queueRateLimitModOpTemplate, rateLimitModOpMessages)
 			time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
 		}
 
@@ -274,17 +286,22 @@ func (c *Client) sendWhisper(rawMsgChan <-chan string) {
 func (c *Client) pingPong() { // https://github.com/gempir/go-twitch-irc/blob/f5ac4c45474ea2fb0e5f1f77f0bd7bbbcc70da7c/c.go#L791
 	c.pongReceived = make(chan bool, 1)
 	var pingTime time.Time
-	c.write([]byte{80, 73, 78, 71, 32, 58, 116, 109, 105, 46, 116, 119, 105, 116, 99, 104, 46, 116, 118, 13, 10}) // "PING :tmi.twitch.tv\r\n"
-
+	if c.IsConnected() {
+		c.write([]byte{80, 73, 78, 71, 32, 58, 116, 109, 105, 46, 116, 119, 105, 116, 99, 104, 46, 116, 118, 13, 10}) // "PING :tmi.twitch.tv\r\n"
+	}
 	go func() {
 		for {
-			<-time.After(time.Second * 60)                                                                                // https://github.com/tmijs/tmi.js/blob/4bb66c433b8ae28326b4cd8567357e6ea729e91a/lib/c.js#L191
-			c.write([]byte{80, 73, 78, 71, 32, 58, 116, 109, 105, 46, 116, 119, 105, 116, 99, 104, 46, 116, 118, 13, 10}) // "PING :tmi.twitch.tv\r\n"
-			if c.OnPongLatency != nil {
-				pingTime = time.Now()
+			// About once every five minutes, the server will send you a PING :tmi.twitch.tv. To ensure that your connection to the server is not prematurely terminated, reply with PONG :tmi.twitch.tv.
+			<-time.After(3 * 60 * time.Second)
+			if c.IsConnected() {
+				c.write([]byte{80, 73, 78, 71, 32, 58, 116, 109, 105, 46, 116, 119, 105, 116, 99, 104, 46, 116, 118, 13, 10}) // "PING :tmi.twitch.tv\r\n"
+				if c.OnPongLatency != nil {
+					pingTime = time.Now()
+				}
 			}
-
 			select {
+			case <-c.context.Done():
+				return
 			case <-c.pongReceived:
 				// Received pong message within the time limit, we're good
 				if c.OnPongLatency != nil {
@@ -294,9 +311,8 @@ func (c *Client) pingPong() { // https://github.com/gempir/go-twitch-irc/blob/f5
 				continue
 
 			case <-time.After(time.Second * 5):
-				// No pong message was received within the pong timeout, disconnect
-				// c.cReconnect.Close()
-				// closer.Close()
+				log.Println("// No pong message was received within the pong timeout, reconnect")
+				c.CloseAndReconnect()
 			}
 		}
 	}()
