@@ -9,11 +9,13 @@ import (
 )
 
 type EmitQueue struct {
-	Authenticate chan string
-	Join         chan string
-	RateLimit    chan string
-	ModOp        chan string
-	Whisper      chan string
+	Authenticate        chan string
+	Join                chan string
+	RateLimit           chan string
+	ModOp               chan string
+	Whisper             chan string
+	WhisperKnownBot     chan string
+	WhisperVerifiedBots chan string
 }
 
 type Client struct {
@@ -22,6 +24,7 @@ type Client struct {
 	Oauth       string
 	Debug       bool
 	BotVerified bool
+	BotKnown    bool
 	Channel     []string
 
 	conn    *websocket.Conn
@@ -49,6 +52,7 @@ type Client struct {
 	OnUserStateMessage      func(message IRCMessage)
 	OnNamesMessage          func(message IRCMessage)
 	OnEndOfNamesMessage     func(message IRCMessage)
+	OnWhisperMessage        func(message IRCMessage)
 	OnPongLatency           func(message time.Duration)
 }
 
@@ -63,6 +67,8 @@ func NewClient(c *Client) (*Client, error) {
 	c.emitQueue.RateLimit = make(chan string)
 	c.emitQueue.ModOp = make(chan string)
 	c.emitQueue.Whisper = make(chan string)
+	c.emitQueue.WhisperKnownBot = make(chan string)
+	c.emitQueue.WhisperVerifiedBots = make(chan string)
 	c.mu.Unlock()
 
 	go c.sendAuthenticate(c.emitQueue.Authenticate)

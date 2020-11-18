@@ -34,7 +34,7 @@ func main() {
 		channel := msg.Params[0][1:] // to remove # from Channel Parameter
 		msgline := msg.Params[1]
 
-		// 		log.Println(fmt.Sprintf(`{
+		// 		log.Printf(`{
 		// 	"Raw": "%s",
 		// 	"Tags": {
 		// 		"badge-info": "%s",
@@ -58,7 +58,7 @@ func main() {
 		// 		"%s"
 		// 	],
 		// 	"Prefix": "%s"
-		// }`, msg.Raw, msg.Tags["badge-info"], msg.Tags["badges"], msg.Tags["color"], msg.Tags["display-name"], msg.Tags["emotes"], msg.Tags["flags"], msg.Tags["id"], msg.Tags["mod"], msg.Tags["room-id"], msg.Tags["subscriber"], msg.Tags["tmi-sent-ts"], msg.Tags["turbo"], msg.Tags["user-id"], msg.Tags["user-type"], msg.Command, msg.Params[0], msg.Params[1], msg.Prefix))
+		// }`, msg.Raw, msg.Tags["badge-info"], msg.Tags["badges"], msg.Tags["color"], msg.Tags["display-name"], msg.Tags["emotes"], msg.Tags["flags"], msg.Tags["id"], msg.Tags["mod"], msg.Tags["room-id"], msg.Tags["subscriber"], msg.Tags["tmi-sent-ts"], msg.Tags["turbo"], msg.Tags["user-id"], msg.Tags["user-type"], msg.Command, msg.Params[0], msg.Params[1], msg.Prefix)
 
 		if bytes.Equal(channel, []byte("#spddl")) {
 			if bytes.Contains(msgline, []byte("hi")) {
@@ -66,7 +66,7 @@ func main() {
 			}
 		}
 
-		log.Println(fmt.Sprintf("%s - %s: %s", msg.Params[0][1:], msg.Tags["display-name"], msg.Params[1]))
+		log.Printf("%s - %s: %s", msg.Params[0][1:], msg.Tags["display-name"], msg.Params[1])
 	}
 
 	bot.OnHosttargetMessage = func(msg twitch.IRCMessage) {

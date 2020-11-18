@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -38,7 +37,7 @@ func main() {
 			}
 		}
 
-		log.Println(fmt.Sprintf("%s - %s: %s", msg.Params[0][1:], msg.Tags["display-name"], msg.Params[1]))
+		log.Printf("%s - %s: %s", msg.Params[0][1:], msg.Tags["display-name"], msg.Params[1])
 	}
 
 	bot.Run()

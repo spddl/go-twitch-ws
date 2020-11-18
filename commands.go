@@ -78,12 +78,16 @@ func (c *Client) Say(channel, msg string, modPrivileged bool) {
 	} else {
 		c.emitQueue.RateLimit <- fmt.Sprintf(sayTemplate, channel, msg)
 	}
-
 }
 
 const whisperTemplate = ":tmi.twitch.tv PRIVMSG #jtv :/w %s %s"
 
-// Whisper TODO: currently without rate limit
 func (c *Client) Whisper(nick, msg string) {
-	c.emitQueue.Whisper <- fmt.Sprintf(whisperTemplate, nick, msg) // TODO Rate Limit
+	if c.BotVerified {
+		c.emitQueue.WhisperVerifiedBots <- fmt.Sprintf(whisperTemplate, nick, msg)
+	} else if c.BotKnown {
+		c.emitQueue.WhisperKnownBot <- fmt.Sprintf(whisperTemplate, nick, msg)
+	} else {
+		c.emitQueue.Whisper <- fmt.Sprintf(whisperTemplate, nick, msg)
+	}
 }

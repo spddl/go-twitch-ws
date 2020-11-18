@@ -75,16 +75,26 @@ func (c *Client) parser(msgData []byte) {
 			continue
 		}
 
+		// log.Println(string(v))
+		// @badges=;color=#1E90FF;display-name=spddl;emotes=;message-id=2;thread-id=29218758_605190948;turbo=0;user-id=29218758;user-type= :spddl!spddl@spddl.tmi.twitch.tv WHISPER gronkhshopbot :dingsi
+
 		ircMsg, err := parseIRCMessage(v)
 		if err != nil {
 			log.Println("parseIRCMessage:", err)
 			return
 		}
 
+		// log.Println(ircMsg.Command)
 		if bytes.Equal(ircMsg.Command, []byte{80, 82, 73, 86, 77, 83, 71}) { // PRIVMSG
 			if c.OnPrivateMessage != nil {
 				c.OnPrivateMessage(*ircMsg)
 			}
+
+		} else if bytes.Equal(ircMsg.Command, []byte{87, 72, 73, 83, 80, 69, 82}) { // WHISPER
+			if c.OnWhisperMessage != nil {
+				c.OnWhisperMessage(*ircMsg)
+			}
+
 		} else if bytes.Equal(ircMsg.Command, []byte{48, 48, 49}) { // RPL_WELCOME (001) Welcome, GLHF!
 			if c.Debug {
 				log.Printf(debugTemplate, v)
@@ -252,10 +262,9 @@ func (c *Client) send(rawMsgChan <-chan string) {
 
 		if _queueRateLimit.get() >= rateLimitMessages {
 			log.Printf(queueRateLimitTemplate, rateLimitMessages)
-			time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
+			time.Sleep(time.Duration(rateLimitSeconds) * time.Second)
 		}
-		log.Println("send", _queueRateLimit.get())
-		log.Println("rawMsg", rawMsg)
+
 		c.write([]byte(rawMsg))
 	}
 }
@@ -270,15 +279,86 @@ func (c *Client) sendModOp(rawMsgChan <-chan string) {
 
 		if _queueRateLimitModOp.get() >= rateLimitModOpMessages {
 			log.Printf(queueRateLimitModOpTemplate, rateLimitModOpMessages)
-			time.Sleep(time.Duration(authenticateRateLimitSeconds) * time.Second)
+			time.Sleep(time.Duration(rateLimitModOpSeconds) * time.Second)
 		}
-
 		c.write([]byte(rawMsg))
 	}
 }
 
 func (c *Client) sendWhisper(rawMsgChan <-chan string) {
 	for rawMsg := range rawMsgChan {
+		_queueRateLimitWhisperMinute.add()
+		_queueRateLimitWhisperSeconds.add()
+		go func() {
+			time.Sleep(time.Duration(rateLimitWhisperMinute) * time.Minute)
+			_queueRateLimitWhisperMinute.sub()
+		}()
+		go func() {
+			time.Sleep(time.Duration(rateLimitWhisperSeconds) * time.Second)
+			_queueRateLimitWhisperSeconds.sub()
+		}()
+
+		if _queueRateLimitWhisperMinute.get() >= rateLimitWhisperMinuteMessages {
+			log.Printf(queueRateLimitWhisperTemplate, rateLimitWhisperMinuteMessages)
+			time.Sleep(time.Duration(rateLimitWhisperMinute) * time.Minute)
+		}
+		if _queueRateLimitWhisperSeconds.get() >= rateLimitWhisperSecondsMessages {
+			log.Printf(queueRateLimitWhisperTemplate, rateLimitWhisperSecondsMessages)
+			time.Sleep(time.Duration(rateLimitWhisperSeconds) * time.Second)
+		}
+
+		c.write([]byte(rawMsg))
+	}
+}
+
+func (c *Client) sendWhisperKnownBot(rawMsgChan <-chan string) {
+	for rawMsg := range rawMsgChan {
+		_queueRateLimitKnownBotsWhisperMinute.add()
+		_queueRateLimitKnownBotsWhisperSeconds.add()
+		go func() {
+			time.Sleep(time.Duration(rateLimitKnownBotsWhisperMinute) * time.Minute)
+			_queueRateLimitKnownBotsWhisperMinute.sub()
+		}()
+		go func() {
+			time.Sleep(time.Duration(rateLimitKnownBotsWhisperSeconds) * time.Second)
+			_queueRateLimitKnownBotsWhisperSeconds.sub()
+		}()
+
+		if _queueRateLimitKnownBotsWhisperMinute.get() >= rateLimitKnownBotsWhisperMinuteMessages {
+			log.Printf(queueRateLimitWhisperTemplate, rateLimitKnownBotsWhisperMinuteMessages)
+			time.Sleep(time.Duration(rateLimitKnownBotsWhisperMinute) * time.Minute)
+		}
+		if _queueRateLimitKnownBotsWhisperSeconds.get() >= rateLimitKnownBotsWhisperSecondsMessages {
+			log.Printf(queueRateLimitWhisperTemplate, rateLimitKnownBotsWhisperSecondsMessages)
+			time.Sleep(time.Duration(rateLimitKnownBotsWhisperSeconds) * time.Second)
+		}
+
+		c.write([]byte(rawMsg))
+	}
+}
+
+func (c *Client) sendWhisperVerifiedBots(rawMsgChan <-chan string) {
+	for rawMsg := range rawMsgChan {
+		_queueRateLimitVerifiedBotsWhisperMinute.add()
+		_queueRateLimitVerifiedBotsWhisperSeconds.add()
+		go func() {
+			time.Sleep(time.Duration(rateLimitVerifiedBotsWhisperMinute) * time.Minute)
+			_queueRateLimitVerifiedBotsWhisperMinute.sub()
+		}()
+		go func() {
+			time.Sleep(time.Duration(rateLimitVerifiedBotsWhisperSeconds) * time.Second)
+			_queueRateLimitVerifiedBotsWhisperSeconds.sub()
+		}()
+
+		if _queueRateLimitVerifiedBotsWhisperMinute.get() >= rateLimitVerifiedBotsWhisperMinuteMessages {
+			log.Printf(queueRateLimitWhisperTemplate, rateLimitVerifiedBotsWhisperMinuteMessages)
+			time.Sleep(time.Duration(rateLimitVerifiedBotsWhisperMinute) * time.Minute)
+		}
+		if _queueRateLimitVerifiedBotsWhisperSeconds.get() >= rateLimitVerifiedBotsWhisperSecondsMessages {
+			log.Printf(queueRateLimitWhisperTemplate, rateLimitVerifiedBotsWhisperSecondsMessages)
+			time.Sleep(time.Duration(rateLimitVerifiedBotsWhisperSeconds) * time.Second)
+		}
+
 		c.write([]byte(rawMsg))
 	}
 }
