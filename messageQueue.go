@@ -1,3 +1,5 @@
+// +build windows js,wasm
+
 package twitch
 
 import (
@@ -5,37 +7,6 @@ import (
 	"log"
 	"time"
 )
-
-func (c *Client) read() {
-	for {
-		select {
-		case <-c.context.Done():
-			c.Close()
-			return
-		default:
-			if c.IsConnected() {
-				_, r, err := c.conn.Reader(c.context)
-				if err != nil {
-					c.CloseAndReconnect()
-					continue
-				}
-
-				var buf bytes.Buffer
-				buf.Grow(bytes.MinRead)
-
-				_, err = buf.ReadFrom(r)
-				if err != nil {
-					continue // failed to read: WebSocket closed: sent close frame: status = StatusNormalClosure and reason = ""
-				}
-
-				msg := bytes.Split(buf.Bytes(), []byte{13, 10}) // "\r\n"
-				for _, value := range msg {
-					go c.parser(value)
-				}
-			}
-		}
-	}
-}
 
 func (c *Client) write(msg []byte) {
 	select {
@@ -74,9 +45,6 @@ func (c *Client) parser(msgData []byte) {
 		if len(v) == 0 {
 			continue
 		}
-
-		// log.Println(string(v))
-		// @badges=;color=#1E90FF;display-name=spddl;emotes=;message-id=2;thread-id=29218758_605190948;turbo=0;user-id=29218758;user-type= :spddl!spddl@spddl.tmi.twitch.tv WHISPER gronkhshopbot :dingsi
 
 		ircMsg, err := parseIRCMessage(v)
 		if err != nil {

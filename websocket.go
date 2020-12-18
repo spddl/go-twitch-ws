@@ -1,7 +1,11 @@
+// +build windows js,wasm
+
 package twitch
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -69,6 +73,9 @@ func NewClient(c *Client) (*Client, error) {
 	c.emitQueue.Whisper = make(chan string)
 	c.emitQueue.WhisperKnownBot = make(chan string)
 	c.emitQueue.WhisperVerifiedBots = make(chan string)
+	if c.User == "" {
+		c.User = fmt.Sprintf("justinfan%d", rand.Intn(9999-1000)+1000)
+	}
 	c.mu.Unlock()
 
 	go c.sendAuthenticate(c.emitQueue.Authenticate)
@@ -80,6 +87,5 @@ func NewClient(c *Client) (*Client, error) {
 	go c.pingPong() // takes care of the ping pong
 
 	go c.read()
-
 	return c, nil
 }

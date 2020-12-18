@@ -1,3 +1,5 @@
+// +build windows js,wasm
+
 // stolen from https://github.com/gempir/go-twitch-irc/blob/master/irc.go
 
 package twitch

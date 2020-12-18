@@ -1,3 +1,5 @@
+// +build windows js,wasm
+
 package twitch
 
 import "sync"

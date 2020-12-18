@@ -1,3 +1,5 @@
+// +build windows js,wasm
+
 /// Package recws provides websocket client based on gorilla/websocket
 /// that will automatically reconnect if the connection is dropped.
 // stolen from https://github.com/recws-org/recws

@@ -69,6 +69,10 @@ func main() {
 		log.Printf("%s - %s: %s", msg.Params[0][1:], msg.Tags["display-name"], msg.Params[1])
 	}
 
+	bot.OnWhisperMessage = func(msg twitch.IRCMessage) {
+		log.Printf("> WhisperMessage, %s: %s\n", msg.Tags["display-name"], msg.Params[1])
+	}
+
 	bot.OnHosttargetMessage = func(msg twitch.IRCMessage) {
 		log.Printf("> HOSTTARGET, %s: %s\n", msg.Params[0][1:], msg.Params[1])
 	}
