@@ -1,4 +1,4 @@
-// +build windows js,wasm
+// +build windows linux js,wasm
 
 // stolen from https://github.com/sigkell/irc-message/blob/master/index.js
 

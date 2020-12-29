@@ -1,4 +1,4 @@
-// +build windows,js,wasm
+// +build windows linux js,wasm
 
 package twitch
 

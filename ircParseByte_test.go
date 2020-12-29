@@ -1,4 +1,4 @@
-// +build windows js,wasm
+// +build windows linux js,wasm
 
 // stolen from https://github.com/gempir/go-twitch-irc/blob/master/irc.go
 // and convert it all too byte arrays
