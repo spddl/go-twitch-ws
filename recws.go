@@ -1,7 +1,7 @@
 // +build windows linux js,wasm
 
-/// Package recws provides websocket client based on gorilla/websocket
-/// that will automatically reconnect if the connection is dropped.
+// Package recws provides websocket client based on gorilla/websocket
+// that will automatically reconnect if the connection is dropped.
 // stolen from https://github.com/recws-org/recws
 
 package twitch

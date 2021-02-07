@@ -24,7 +24,7 @@ func BenchmarkParseIRCMessageString(b *testing.B) { // stolen from https://githu
 	for n := 0; n < b.N; n++ {
 		msg := strings.Split(string(data), "\r\n")
 		for _, v := range msg {
-			if len(v) == 0 {
+			if v == "" {
 				continue
 			}
 			_, err := parseIRCMessageString(v)

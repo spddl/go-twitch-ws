@@ -46,128 +46,143 @@ func (c *Client) parser(msgData []byte) {
 			continue
 		}
 
+		// log.Println(string(v))
+
 		ircMsg, err := parseIRCMessage(v)
 		if err != nil {
 			log.Println("parseIRCMessage:", err)
 			return
 		}
 
-		// log.Println(ircMsg.Command)
-		if bytes.Equal(ircMsg.Command, []byte{80, 82, 73, 86, 77, 83, 71}) { // PRIVMSG
+		switch {
+		case bytes.Equal(ircMsg.Command, []byte{80, 82, 73, 86, 77, 83, 71}): // PRIVMSG
 			if c.OnPrivateMessage != nil {
 				c.OnPrivateMessage(*ircMsg)
 			}
 
-		} else if bytes.Equal(ircMsg.Command, []byte{87, 72, 73, 83, 80, 69, 82}) { // WHISPER
+		case bytes.Equal(ircMsg.Command, []byte{87, 72, 73, 83, 80, 69, 82}): // WHISPER
 			if c.OnWhisperMessage != nil {
 				c.OnWhisperMessage(*ircMsg)
 			}
 
-		} else if bytes.Equal(ircMsg.Command, []byte{48, 48, 49}) { // RPL_WELCOME (001) Welcome, GLHF!
+		case bytes.Equal(ircMsg.Command, []byte{48, 48, 49}): // RPL_WELCOME (001) Welcome, GLHF!
 			if c.Debug {
 				log.Printf(debugTemplate, v)
 			}
+
 			if c.OnConnect != nil {
 				c.OnConnect(true)
 			}
-		} else if bytes.Equal(ircMsg.Command, []byte{48, 48, 50}) { // RPL_YOURHOST (002) Your host is tmi.twitch.tv
+
+		case bytes.Equal(ircMsg.Command, []byte{48, 48, 50}): // RPL_YOURHOST (002) Your host is tmi.twitch.tv
 			if c.Debug {
 				log.Printf(debugTemplate, v)
 			}
-		} else if bytes.Equal(ircMsg.Command, []byte{48, 48, 51}) { // RPL_CREATED (003) This server is rather new
+
+		case bytes.Equal(ircMsg.Command, []byte{48, 48, 51}): // RPL_CREATED (003) This server is rather new
 			if c.Debug {
 				log.Printf(debugTemplate, v)
 			}
-		} else if bytes.Equal(ircMsg.Command, []byte{48, 48, 52}) { // RPL_MYINFO (004)
+
+		case bytes.Equal(ircMsg.Command, []byte{48, 48, 52}): // RPL_MYINFO (004)
 			if c.Debug {
 				log.Printf(debugTemplate, v)
 			}
-		} else if bytes.Equal(ircMsg.Command, []byte{51, 53, 51}) { // RPL_NAMREPLY (353)
+
+		case bytes.Equal(ircMsg.Command, []byte{51, 53, 51}): // RPL_NAMREPLY (353)
 			if c.OnNamesMessage != nil {
 				c.OnNamesMessage(*ircMsg)
 			}
-		} else if bytes.Equal(ircMsg.Command, []byte{51, 54, 54}) { // RPL_ENDOFNAMES (366)
+
+		case bytes.Equal(ircMsg.Command, []byte{51, 54, 54}): // RPL_ENDOFNAMES (366)
 			if c.OnEndOfNamesMessage != nil {
 				c.OnEndOfNamesMessage(*ircMsg)
 			}
-		} else if bytes.Equal(ircMsg.Command, []byte{51, 55, 50}) { // RPL_MOTD (372) You are in a maze of twisty passages, all alike.
+
+		case bytes.Equal(ircMsg.Command, []byte{51, 55, 50}): // RPL_MOTD (372) You are in a maze of twisty passages, all alike.
 			if c.Debug {
 				log.Printf(debugTemplate, v)
 			}
-		} else if bytes.Equal(ircMsg.Command, []byte{51, 55, 53}) { // RPL_MOTDSTART (375)
+
+		case bytes.Equal(ircMsg.Command, []byte{51, 55, 53}): // RPL_MOTDSTART (375)
 			if c.Debug {
 				log.Printf(debugTemplate, v)
 			}
-		} else if bytes.Equal(ircMsg.Command, []byte{51, 55, 54}) { // RPL_ENDOFMOTD (376)
+
+		case bytes.Equal(ircMsg.Command, []byte{51, 55, 54}): // RPL_ENDOFMOTD (376)
 			if c.Debug {
 				log.Printf(debugTemplate, v)
 			}
-		} else if bytes.Equal(ircMsg.Command, []byte{67, 65, 80}) { // CAP
+
+		case bytes.Equal(ircMsg.Command, []byte{67, 65, 80}): // CAP
 			if c.Debug {
 				log.Printf(debugTemplate, v)
 			}
-		} else if bytes.Equal(ircMsg.Command, []byte{72, 79, 83, 84, 84, 65, 82, 71, 69, 84}) { // HOSTTARGET
+
+		case bytes.Equal(ircMsg.Command, []byte{72, 79, 83, 84, 84, 65, 82, 71, 69, 84}): // HOSTTARGET
 			if c.OnHosttargetMessage != nil {
 				c.OnHosttargetMessage(*ircMsg)
 			}
 
-		} else if bytes.Equal(ircMsg.Command, []byte{78, 79, 84, 73, 67, 69}) { // NOTICE
+		case bytes.Equal(ircMsg.Command, []byte{78, 79, 84, 73, 67, 69}): // NOTICE
 			if c.OnNoticeMessage != nil {
 				c.OnNoticeMessage(*ircMsg)
 			}
 
-		} else if bytes.Equal(ircMsg.Command, []byte{71, 76, 79, 66, 65, 76, 85, 83, 69, 82, 83, 84, 65, 84, 69}) { // GLOBALUSERSTATE
+		case bytes.Equal(ircMsg.Command, []byte{71, 76, 79, 66, 65, 76, 85, 83, 69, 82, 83, 84, 65, 84, 69}): // GLOBALUSERSTATE
 			if c.OnGlobalUserSateMessage != nil {
 				c.OnGlobalUserSateMessage(*ircMsg)
 			}
 
-		} else if bytes.Equal(ircMsg.Command, []byte{85, 83, 69, 82, 83, 84, 65, 84, 69}) { // USERSTATE
+		case bytes.Equal(ircMsg.Command, []byte{85, 83, 69, 82, 83, 84, 65, 84, 69}): // USERSTATE
 			if c.OnUserStateMessage != nil {
 				c.OnUserStateMessage(*ircMsg)
 			}
 
-		} else if bytes.Equal(ircMsg.Command, []byte{82, 79, 79, 77, 83, 84, 65, 84, 69}) { // ROOMSTATE
+		case bytes.Equal(ircMsg.Command, []byte{82, 79, 79, 77, 83, 84, 65, 84, 69}): // ROOMSTATE
 			if c.OnRoomStateMessage != nil {
 				c.OnRoomStateMessage(*ircMsg)
 			}
 
-		} else if bytes.Equal(ircMsg.Command, []byte{67, 76, 69, 65, 82, 77, 83, 71}) { // CLEARMSG
+		case bytes.Equal(ircMsg.Command, []byte{67, 76, 69, 65, 82, 77, 83, 71}): // CLEARMSG
 			if c.OnClearMsgMessage != nil {
 				c.OnClearMsgMessage(*ircMsg)
 			}
 
-		} else if bytes.Equal(ircMsg.Command, []byte{67, 76, 69, 65, 82, 67, 72, 65, 84}) { // CLEARCHAT
+		case bytes.Equal(ircMsg.Command, []byte{67, 76, 69, 65, 82, 67, 72, 65, 84}): // CLEARCHAT
 			if c.OnClearChatMessage != nil {
 				c.OnClearChatMessage(*ircMsg)
 			}
 
-		} else if bytes.Equal(ircMsg.Command, []byte{85, 83, 69, 82, 78, 79, 84, 73, 67, 69}) { // USERNOTICE
+		case bytes.Equal(ircMsg.Command, []byte{85, 83, 69, 82, 78, 79, 84, 73, 67, 69}): // USERNOTICE
 			if c.OnUserNoticeMessage != nil {
 				c.OnUserNoticeMessage(*ircMsg)
 			}
 
-		} else if bytes.Equal(ircMsg.Command, []byte{80, 73, 78, 71}) { // PING // https://blog.golang.org/concurrency-timeouts
+		case bytes.Equal(ircMsg.Command, []byte{80, 73, 78, 71}): // PING // https://blog.golang.org/concurrency-timeouts
 			if c.IsConnected() {
 				c.write([]byte{80, 79, 78, 71, 32, 58, 116, 109, 105, 46, 116, 119, 105, 116, 99, 104, 46, 116, 118, 13, 10}) // "PONG :tmi.twitch.tv\r\n"
 			}
-		} else if bytes.Equal(ircMsg.Command, []byte{80, 79, 78, 71}) { // PONG
+
+		case bytes.Equal(ircMsg.Command, []byte{80, 79, 78, 71}): // PONG
 			c.pongReceived <- true
-		} else if bytes.Equal(ircMsg.Command, []byte{74, 79, 73, 78}) { // JOIN
+
+		case bytes.Equal(ircMsg.Command, []byte{74, 79, 73, 78}): // JOIN
 			if c.OnJoinMessage != nil {
 				c.OnJoinMessage(*ircMsg)
 			}
 
-		} else if bytes.Equal(ircMsg.Command, []byte{80, 65, 82, 84}) { // PART
+		case bytes.Equal(ircMsg.Command, []byte{80, 65, 82, 84}): // PART
 			if c.OnPartMessage != nil {
 				c.OnPartMessage(*ircMsg)
 			}
 
-		} else {
+		default:
 			if c.OnUnknownMessage != nil {
 				c.OnUnknownMessage(*ircMsg)
 			}
-
 		}
+
 	}
 }
 

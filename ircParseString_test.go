@@ -129,7 +129,7 @@ func parseIRCMessageSourceString(rawSource string) *ircMessageSourceString {
 
 	rawSource = strings.TrimPrefix(rawSource, ":")
 
-	regex := regexp.MustCompile(`!|@`)
+	regex := regexp.MustCompile(`[!@]`)
 	split := regex.Split(rawSource, -1)
 
 	if len(split) == 0 {

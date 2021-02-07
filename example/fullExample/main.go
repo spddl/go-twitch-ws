@@ -24,7 +24,7 @@ func main() {
 		Oauth:       "", // without "oauth:" https://twitchapps.com/tmi/
 		Debug:       true,
 		BotVerified: false,                                       // verified bots: Have higher chat limits than regular users.
-		Channel:     []string{"gronkhtv", "tfue", "dreamHackcs"}, // only in Lowercase
+		Channel:     []string{"gronkhtv", "tfue", "dreamhackcs"}, // only in Lowercase
 	})
 	if err != nil {
 		panic(err)

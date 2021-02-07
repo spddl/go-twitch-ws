@@ -85,11 +85,12 @@ func (c *Client) Say(channel, msg string, modPrivileged bool) {
 const whisperTemplate = ":tmi.twitch.tv PRIVMSG #jtv :/w %s %s"
 
 func (c *Client) Whisper(nick, msg string) {
-	if c.BotVerified {
+	switch {
+	case c.BotVerified:
 		c.emitQueue.WhisperVerifiedBots <- fmt.Sprintf(whisperTemplate, nick, msg)
-	} else if c.BotKnown {
+	case c.BotKnown:
 		c.emitQueue.WhisperKnownBot <- fmt.Sprintf(whisperTemplate, nick, msg)
-	} else {
+	default:
 		c.emitQueue.Whisper <- fmt.Sprintf(whisperTemplate, nick, msg)
 	}
 }

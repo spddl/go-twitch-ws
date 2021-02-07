@@ -79,11 +79,11 @@ func (i *mutexInt) get() int {
 
 func (i *mutexInt) add() {
 	i.mutex.Lock()
-	i.v += 1
+	i.v++
 	i.mutex.Unlock()
 }
 func (i *mutexInt) sub() {
 	i.mutex.Lock()
-	i.v -= 1
+	i.v--
 	i.mutex.Unlock()
 }
