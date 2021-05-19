@@ -30,7 +30,7 @@ func (c *Client) read() {
 
 				msg := bytes.Split(buf.Bytes(), []byte{13, 10}) // "\r\n"
 				for _, value := range msg {
-					go c.parser(value)
+					c.parser(value)
 				}
 			}
 		}
